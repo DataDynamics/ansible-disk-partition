@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  become: true
+
+  vars:
+    disks:
+      - { device: /dev/xvdc, mount: /data/xvdc }
+      - { device: /dev/xvde, mount: /data/xvde }
+      - { device: /dev/xvdf, mount: /data/xvdf }
+      - { device: /dev/xvdg, mount: /data/xvdg }
+      - { device: /dev/xvdh, mount: /data/xvdh }
+
+  tasks:
+    - name: Unmount filesystems
+      ansible.posix.mount:
+        path: "{{ item.mount }}"
+        state: absent
+      loop: "{{ disks }}"
+      ignore_errors: true
+
+    - name: Remove mount directories
+      ansible.builtin.file:
+        path: "{{ item.mount }}"
+        state: absent
+      loop: "{{ disks }}"
+
+    - name: Remove fstab entries
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: "^{{ item.device }}1"
+        state: absent
+      loop: "{{ disks }}"
+
+    - name: Remove partitions (wipe disk partitions)
+      community.general.parted:
+        device: "{{ item.device }}"
+        label: gpt
+        state: absent
+        number: 1
+      loop: "{{ disks }}"
+
+    - name: Refresh partition table
+      ansible.builtin.command: partprobe
+      changed_when: false
