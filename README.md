@@ -3,5 +3,5 @@
 ## Running
 
 ```
-# ansible -i inventory.ini  create_parts.yml
+# ansible-playbook -i inventory.ini  create_parts.yml
 ```
