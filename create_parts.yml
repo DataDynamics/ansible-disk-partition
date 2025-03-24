@@ -1,0 +1,55 @@
+---
+- hosts: localhost
+  become: true
+  vars:
+    disks:
+      - { device: /dev/xvdc, mount: /data/xvdc }
+      - { device: /dev/xvde, mount: /data/xvde }
+      - { device: /dev/xvdf, mount: /data/xvdf }
+      - { device: /dev/xvdg, mount: /data/xvdg }
+      - { device: /dev/xvdh, mount: /data/xvdh }
+
+  tasks:
+    - name: Create GPT partition table on disks
+      community.general.parted:
+        device: "{{ item.device }}"
+        label: gpt
+        state: present
+        number: 1
+      loop: "{{ disks }}"
+
+    - name: Create primary partition using 100% free space
+      community.general.parted:
+        device: "{{ item.device }}"
+        number: 1
+        state: present
+        part_type: primary
+        fs_type: xfs
+        resize: yes
+      loop: "{{ disks }}"
+
+    - name: Refresh partition table
+      ansible.builtin.command: partprobe
+      changed_when: false
+
+    - name: Format partitions with XFS filesystem
+      community.general.filesystem:
+        fstype: xfs
+        dev: "{{ item.device }}1"
+      loop: "{{ disks }}"
+
+    - name: Create mount directories explicitly
+      ansible.builtin.file:
+        path: "{{ item.mount }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ disks }}"
+
+    - name: Mount filesystems and persist in /etc/fstab
+      ansible.posix.mount:
+        path: "{{ item.mount }}"
+        src: "{{ item.device }}1"
+        fstype: xfs
+        opts: defaults
+        state: mounted
+      loop: "{{ disks }}"
