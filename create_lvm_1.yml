@@ -1,0 +1,46 @@
+---
+- hosts: localhost
+  become: true
+
+  vars:
+    vg_name: vg_data01
+    lv_name: lv_data01
+    mount_point: /data/01
+    devices:
+      - /dev/xvdc1
+      - /dev/xvde1
+
+  tasks:
+    - name: Create LVM Physical Volumes (using command)
+      ansible.builtin.command: "pvcreate -ff -y {{ devices | join(' ') }}"
+      args:
+        creates: "/dev/{{ devices[0] }}"
+
+    - name: Create LVM Volume Group
+      ansible.builtin.command: "vgcreate {{ vg_name }} {{ devices | join(' ') }}"
+      args:
+        creates: "/dev/{{ vg_name }}"
+
+    - name: Create LVM Logical Volume (RAID1)
+      ansible.builtin.command: "lvcreate --type raid1 -l 100%FREE -n {{ lv_name }} {{ vg_name }}"
+      args:
+        creates: "/dev/{{ vg_name }}/{{ lv_name }}"
+
+    - name: Format Logical Volume with XFS
+      community.general.filesystem:
+        fstype: xfs
+        dev: "/dev/{{ vg_name }}/{{ lv_name }}"
+
+    - name: Create Mount Directory
+      ansible.builtin.file:
+        path: "{{ mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount Logical Volume and add to fstab
+      ansible.posix.mount:
+        path: "{{ mount_point }}"
+        src: "/dev/{{ vg_name }}/{{ lv_name }}"
+        fstype: xfs
+        opts: defaults
+        state: mounted
