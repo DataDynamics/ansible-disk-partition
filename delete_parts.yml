@@ -1,7 +1,6 @@
 ---
 - hosts: localhost
   become: true
-
   vars:
     disks:
       - { device: /dev/xvdc, mount: /data/xvdc }
