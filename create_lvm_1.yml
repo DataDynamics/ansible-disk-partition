@@ -21,8 +21,8 @@
       args:
         creates: "/dev/{{ vg_name }}"
 
-    - name: Create LVM Logical Volume (RAID1)
-      ansible.builtin.command: "lvcreate --type raid1 -l 100%FREE -n {{ lv_name }} {{ vg_name }}"
+    - name: Create LVM Logical Volume (RAID0)
+      ansible.builtin.command: "lvcreate --type raid0 -l 100%FREE -n {{ lv_name }} {{ vg_name }}"
       args:
         creates: "/dev/{{ vg_name }}/{{ lv_name }}"
 
