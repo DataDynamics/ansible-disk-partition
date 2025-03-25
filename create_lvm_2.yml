@@ -23,16 +23,11 @@
       args:
         creates: "/dev/{{ vg_name }}"
 
-    - name: Create LVM RAID6 Logical Volume
-      ansible.builtin.command: "lvcreate --type raid5 -l 100%FREE -n {{ lv_name }} {{ vg_name }}"
+    - name: Create LVM RAID10 Logical Volume
+      ansible.builtin.command: "lvcreate --type raid10 -l 100%FREE -n {{ lv_name }} {{ vg_name }}"
       args:
         creates: "/dev/{{ vg_name }}/{{ lv_name }}"
 
-#    - name: Format Logical Volume with XFS
-#      ansible.builtin.command: "mkfs.xfs -f /dev/{{ vg_name }}/{{ lv_name }}"
-#      args:
-#        creates: "/dev/{{ vg_name }}/{{ lv_name }}"
-#
     - name: Format Logical Volume with XFS
       community.general.filesystem:
         fstype: xfs
